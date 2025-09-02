@@ -72,7 +72,7 @@ export const handlers = [
   // 활성 BTC 옵션 조회
   http.get('https://jungho.dev/api-btcfi/btc-options/active', () => {
     return HttpResponse.json({
-      data: mockBTCOptions.filter((option) => option.is_active),
+      data: mockBTCOptions.filter(option => option.is_active),
     });
   }),
 

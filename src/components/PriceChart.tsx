@@ -5,14 +5,17 @@ interface PriceChartProps {
   className?: string;
 }
 
-export const PriceChart = ({ currentPrice, className = "" }: PriceChartProps) => {
+export const PriceChart = ({
+  currentPrice,
+  className = '',
+}: PriceChartProps) => {
   // Generate sample 24h price data
   const chartData = useMemo(() => {
     const points = 24;
     const data = [];
     const basePrice = currentPrice;
     const volatility = 0.05; // 5% volatility
-    
+
     for (let i = 0; i < points; i++) {
       const randomChange = (Math.random() - 0.5) * volatility;
       const price = basePrice * (1 + randomChange);
@@ -21,10 +24,10 @@ export const PriceChart = ({ currentPrice, className = "" }: PriceChartProps) =>
         price: price,
       });
     }
-    
+
     // Ensure the last point is the current price
     data[data.length - 1].price = currentPrice;
-    
+
     return data;
   }, [currentPrice]);
 
@@ -33,11 +36,13 @@ export const PriceChart = ({ currentPrice, className = "" }: PriceChartProps) =>
   const priceRange = maxPrice - minPrice;
 
   // Generate SVG path for the line
-  const pathData = chartData.map((point, index) => {
-    const x = (index / (chartData.length - 1)) * 100;
-    const y = 100 - ((point.price - minPrice) / priceRange) * 100;
-    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }).join(' ');
+  const pathData = chartData
+    .map((point, index) => {
+      const x = (index / (chartData.length - 1)) * 100;
+      const y = 100 - ((point.price - minPrice) / priceRange) * 100;
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+    })
+    .join(' ');
 
   // Generate SVG path for the filled area
   const fillPathData = `${pathData} L 100 100 L 0 100 Z`;
@@ -53,18 +58,26 @@ export const PriceChart = ({ currentPrice, className = "" }: PriceChartProps) =>
       >
         <defs>
           <linearGradient id="priceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--trading-yellow))" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="hsl(var(--trading-yellow))" stopOpacity="0.1" />
+            <stop
+              offset="0%"
+              stopColor="hsl(var(--trading-yellow))"
+              stopOpacity="0.6"
+            />
+            <stop
+              offset="100%"
+              stopColor="hsl(var(--trading-yellow))"
+              stopOpacity="0.1"
+            />
           </linearGradient>
         </defs>
-        
+
         {/* Filled area under the line */}
         <path
           d={fillPathData}
           fill="url(#priceGradient)"
           className="opacity-80"
         />
-        
+
         {/* Price line */}
         <path
           d={pathData}

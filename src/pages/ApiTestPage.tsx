@@ -112,7 +112,7 @@ const ApiTestPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {optionsData.slice(0, 5).map((option) => (
+                  {optionsData.slice(0, 5).map(option => (
                     <tr key={option.id} className="border-b border-border">
                       <td className="px-4 py-2 text-foreground text-sm">
                         {option.id}

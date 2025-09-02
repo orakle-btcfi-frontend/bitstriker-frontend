@@ -40,7 +40,7 @@ export const renderWithProviders = customRender;
 
 // 테스트용 유틸리티 함수들
 export const waitForQueryToLoad = () =>
-  new Promise((resolve) => setTimeout(resolve, 0));
+  new Promise(resolve => setTimeout(resolve, 0));
 
 export * from '@testing-library/react';
 export { customRender as render };

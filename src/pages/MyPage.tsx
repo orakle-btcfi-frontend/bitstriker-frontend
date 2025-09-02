@@ -316,7 +316,7 @@ const MyPage = () => {
                   <span className="text-muted-foreground">This Week</span>
                   <span className="text-foreground font-semibold">
                     {
-                      tradeHistories.filter((trade) => {
+                      tradeHistories.filter(trade => {
                         const tradeDate = new Date(trade.created_at);
                         const weekAgo = new Date();
                         weekAgo.setDate(weekAgo.getDate() - 7);

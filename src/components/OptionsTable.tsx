@@ -44,7 +44,7 @@ export const OptionsTable = ({
   // API 데이터를 프론트엔드 형식으로 변환하고 현재 가격에 맞게 조정
   const allOptions = btcOptionsData
     ? transformBTCOptionsToOptionData(btcOptionsData)
-        .map((option) => {
+        .map(option => {
           // 백엔드 Strike 가격을 현재 BTC 가격 기준으로 스케일링
           // 백엔드 데이터: 30,000 ~ 80,000 범위
           // 현재 가격: ~115,000
@@ -56,7 +56,7 @@ export const OptionsTable = ({
             strike: adjustedStrike,
           };
         })
-        .filter((option) => {
+        .filter(option => {
           // 현재가 근처 ±15% 범위의 옵션들만 표시
           const strikeRange = currentPrice * 0.15;
           const withinStrikeRange =

@@ -1,10 +1,15 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { TrendingUp, TrendingDown, Clock, DollarSign, Activity } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  DollarSign,
+  Activity,
+} from 'lucide-react';
 import { OptionsTable } from '@/components/OptionsTable';
 import { TradingHeader } from '@/components/TradingHeader';
 import { RecentTrades } from '@/components/RecentTrades';
@@ -35,21 +40,26 @@ const Index = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleTrade = (trade: { type: 'calls' | 'puts'; strike: number; price: number; quantity: number }) => {
+  const handleTrade = (trade: {
+    type: 'calls' | 'puts';
+    strike: number;
+    price: number;
+    quantity: number;
+  }) => {
     const newTrade: Trade = {
       id: Date.now().toString(),
       ...trade,
       action: 'Buy',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     setRecentTrades(prev => [newTrade, ...prev.slice(0, 19)]); // Keep last 20 trades
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <TradingHeader currentPrice={currentPrice} />
-      
+
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Main Trading Interface */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
@@ -62,14 +72,18 @@ const Index = () => {
                   <div className="flex items-center space-x-8">
                     <div className="flex items-center space-x-2">
                       <TrendingUp className="w-5 h-5 text-[hsl(var(--trading-green))]" />
-                      <h3 className="text-lg font-semibold text-[hsl(var(--trading-green))]">Calls</h3>
+                      <h3 className="text-lg font-semibold text-[hsl(var(--trading-green))]">
+                        Calls
+                      </h3>
                     </div>
                     <div className="flex items-center space-x-2">
                       <TrendingDown className="w-5 h-5 text-[hsl(var(--trading-red))]" />
-                      <h3 className="text-lg font-semibold text-[hsl(var(--trading-red))]">Puts</h3>
+                      <h3 className="text-lg font-semibold text-[hsl(var(--trading-red))]">
+                        Puts
+                      </h3>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-6 text-sm text-muted-foreground">
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4" />
@@ -81,7 +95,10 @@ const Index = () => {
                   </div>
                 </div>
 
-                <OptionsTable currentPrice={currentPrice} onTrade={handleTrade} />
+                <OptionsTable
+                  currentPrice={currentPrice}
+                  onTrade={handleTrade}
+                />
               </div>
             </Card>
           </div>
@@ -97,20 +114,30 @@ const Index = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-muted-foreground">ATM Vol</span>
-                  <span className="text-sm font-semibold price-yellow">20.0%</span>
+                  <span className="text-sm font-semibold price-yellow">
+                    20.0%
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">24H Call Volume</span>
+                  <span className="text-sm text-muted-foreground">
+                    24H Call Volume
+                  </span>
                   <span className="text-sm font-semibold">865.98</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">24H Put Volume</span>
+                  <span className="text-sm text-muted-foreground">
+                    24H Put Volume
+                  </span>
                   <span className="text-sm font-semibold">2,642.76</span>
                 </div>
                 <Separator className="my-3" />
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-muted-foreground">Est. Settlement</span>
-                  <span className="text-sm font-bold">${currentPrice.toFixed(1)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Est. Settlement
+                  </span>
+                  <span className="text-sm font-bold">
+                    ${currentPrice.toFixed(1)}
+                  </span>
                 </div>
               </div>
             </Card>
@@ -122,9 +149,12 @@ const Index = () => {
                   <DollarSign className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-primary mb-2">One-Way Trading</h4>
+                  <h4 className="text-lg font-semibold text-primary mb-2">
+                    One-Way Trading
+                  </h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Purchase call and put options with ease. All positions are held until expiry or exercise.
+                    Purchase call and put options with ease. All positions are
+                    held until expiry or exercise.
                   </p>
                 </div>
               </div>

@@ -257,7 +257,10 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
               <div>
                 <Label className="text-sm font-medium">잔액</Label>
                 <div className="text-2xl font-bold text-primary mt-1">
-                  {state.wallet.balance ? state.wallet.balance.toFixed(8).replace(/\.?0+$/, '') : '0'} BTC
+                  {state.wallet.balance
+                    ? state.wallet.balance.toFixed(8).replace(/\.?0+$/, '')
+                    : '0'}{' '}
+                  BTC
                 </div>
               </div>
 
@@ -333,7 +336,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                     type="password"
                     placeholder="개인키를 입력하세요..."
                     value={privateKey}
-                    onChange={(e) => setPrivateKey(e.target.value)}
+                    onChange={e => setPrivateKey(e.target.value)}
                     className="font-mono"
                   />
                 </div>

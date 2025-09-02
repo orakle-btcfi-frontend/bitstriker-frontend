@@ -71,7 +71,7 @@ const Homepage = () => {
 
     // 실제 활성 옵션 데이터를 marketData 형식으로 변환
     const filteredOptions = activeOptionsData
-      .filter((option) => option.is_active)
+      .filter(option => option.is_active)
       .slice(0, 6); // 처음 6개만 표시
 
     return filteredOptions.map((option, index) => {

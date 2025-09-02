@@ -50,12 +50,12 @@ const TradePage = () => {
 
     // 고유한 만료일들을 추출하고 정렬
     const uniqueExpiries = Array.from(
-      new Set(optionsData.map((option) => option.expiry))
+      new Set(optionsData.map(option => option.expiry))
     ).sort();
 
     const now = new Date();
 
-    return uniqueExpiries.slice(0, 6).map((expiry) => {
+    return uniqueExpiries.slice(0, 6).map(expiry => {
       const expiryDate = new Date(expiry);
       const diffDays = Math.ceil(
         (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -173,7 +173,7 @@ const TradePage = () => {
           <div className="lg:col-span-3">
             <Card className="glass-card p-6 mb-6">
               <div className="grid grid-cols-5 gap-4">
-                {expiryOptions.map((expiry) => (
+                {expiryOptions.map(expiry => (
                   <Button
                     key={expiry.label}
                     variant={

@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+coverage
+*.min.js
+*.min.css
+public/
+*.lock
+*.lockb
+package-lock.json
+yarn.lock
+bun.lockb
+.git
+.DS_Store

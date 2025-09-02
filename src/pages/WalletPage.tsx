@@ -468,7 +468,7 @@ const WalletPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {transactions.map((tx) => (
+              {transactions.map(tx => (
                 <div
                   key={tx.id}
                   className="flex items-center justify-between p-4 rounded-lg border border-border/30 hover:bg-muted/20 transition-colors"

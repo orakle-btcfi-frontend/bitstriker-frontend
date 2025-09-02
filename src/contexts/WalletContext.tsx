@@ -281,7 +281,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
     // 모든 대기 중인 setTimeout 취소
     console.log('⏰ 대기 중인 타이머 개수:', timeoutIds.current.length);
-    timeoutIds.current.forEach((timeoutId) => {
+    timeoutIds.current.forEach(timeoutId => {
       clearTimeout(timeoutId);
       console.log('⏰ 타이머 취소됨:', timeoutId);
     });

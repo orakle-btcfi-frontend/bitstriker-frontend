@@ -33,7 +33,10 @@ export function WalletButton() {
             {formatAddress(state.wallet.address)}
           </span>
           <Badge variant="secondary" className="ml-1 px-2 py-0.5 text-xs">
-            {state.wallet.balance ? state.wallet.balance.toFixed(8).replace(/\.?0+$/, '') : '0'} BTC
+            {state.wallet.balance
+              ? state.wallet.balance.toFixed(8).replace(/\.?0+$/, '')
+              : '0'}{' '}
+            BTC
           </Badge>
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </Button>

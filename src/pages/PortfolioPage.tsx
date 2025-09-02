@@ -113,11 +113,11 @@ const PortfolioPage = () => {
     const currentPrice = priceData?.price || 114682;
 
     const callOptions = activeOptionsData
-      .filter((option) => option.call_premium > option.put_premium)
+      .filter(option => option.call_premium > option.put_premium)
       .slice(0, 10);
 
     const putOptions = activeOptionsData
-      .filter((option) => option.put_premium > option.call_premium)
+      .filter(option => option.put_premium > option.call_premium)
       .slice(0, 10);
 
     const callValue = callOptions.reduce(
@@ -712,7 +712,7 @@ const PortfolioPage = () => {
               tradeHistories.slice(0, 5).map((trade, index) => {
                 // 거래의 option_id로 정확한 옵션 찾기
                 const relatedOption = activeOptionsData?.find(
-                  (option) => option.id === trade.option_id
+                  option => option.id === trade.option_id
                 );
                 const expiryDate =
                   relatedOption?.expiry || '2025-09-26T16:00:00Z';

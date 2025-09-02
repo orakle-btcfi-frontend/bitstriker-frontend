@@ -43,8 +43,8 @@ export const Navigation = () => {
                   isActive('/')
                     ? 'text-primary font-semibold bg-primary/20'
                     : hoveredItem === 'home'
-                    ? 'text-primary/80 bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-primary/80 bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground'
                 }`}
                 onMouseEnter={() => setHoveredItem('home')}
                 onMouseLeave={() => setHoveredItem(null)}
@@ -59,8 +59,8 @@ export const Navigation = () => {
                   isActive('/trade')
                     ? 'text-primary font-semibold bg-primary/20'
                     : hoveredItem === 'trade'
-                    ? 'text-primary/80 bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-primary/80 bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground'
                 }`}
                 onMouseEnter={() => setHoveredItem('trade')}
                 onMouseLeave={() => setHoveredItem(null)}
@@ -75,8 +75,8 @@ export const Navigation = () => {
                   isActive('/portfolio')
                     ? 'text-primary font-semibold bg-primary/20'
                     : hoveredItem === 'portfolio'
-                    ? 'text-primary/80 bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-primary/80 bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground'
                 }`}
                 onMouseEnter={() => setHoveredItem('portfolio')}
                 onMouseLeave={() => setHoveredItem(null)}
@@ -91,8 +91,8 @@ export const Navigation = () => {
                   isActive('/wallet')
                     ? 'text-primary font-semibold bg-primary/20'
                     : hoveredItem === 'wallet'
-                    ? 'text-primary/80 bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-primary/80 bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground'
                 }`}
                 onMouseEnter={() => setHoveredItem('wallet')}
                 onMouseLeave={() => setHoveredItem(null)}

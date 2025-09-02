@@ -87,7 +87,7 @@ export const useCreateTrade = () => {
 export const transformBTCOptionsToOptionData = (
   btcOptions: BTCOption[]
 ): OptionData[] => {
-  return btcOptions.map((option) => ({
+  return btcOptions.map(option => ({
     id: option.id,
     strike: option.strike,
     expiry: option.expiry,

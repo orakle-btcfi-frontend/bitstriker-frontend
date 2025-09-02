@@ -34,11 +34,32 @@ export const BLogo = ({ className }: { className?: string }) => {
         strokeWidth="1.5"
         fill="none"
       />
-      
+
       {/* Horizontal dividers */}
-      <line x1="20" y1="47" x2="65" y2="47" stroke="currentColor" strokeWidth="2"/>
-      <line x1="25" y1="42" x2="58" y2="42" stroke="currentColor" strokeWidth="1.5"/>
-      <line x1="30" y1="39" x2="51" y2="39" stroke="currentColor" strokeWidth="1"/>
+      <line
+        x1="20"
+        y1="47"
+        x2="65"
+        y2="47"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <line
+        x1="25"
+        y1="42"
+        x2="58"
+        y2="42"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <line
+        x1="30"
+        y1="39"
+        x2="51"
+        y2="39"
+        stroke="currentColor"
+        strokeWidth="1"
+      />
     </svg>
   );
 };
