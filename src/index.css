@@ -1,0 +1,97 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 220 15% 8%;
+    --foreground: 210 10% 95%;
+
+    --card: 220 12% 12%;
+    --card-foreground: 210 10% 95%;
+
+    --popover: 220 12% 12%;
+    --popover-foreground: 210 10% 95%;
+
+    --primary: 220 70% 65%;
+    --primary-foreground: 220 15% 8%;
+
+    --secondary: 220 10% 18%;
+    --secondary-foreground: 210 10% 95%;
+
+    --muted: 220 8% 16%;
+    --muted-foreground: 210 5% 65%;
+
+    --accent: 220 10% 18%;
+    --accent-foreground: 210 10% 95%;
+
+    --destructive: 0 75% 65%;
+    --destructive-foreground: 210 10% 95%;
+
+    --border: 220 8% 20%;
+    --input: 220 8% 16%;
+    --ring: 220 70% 65%;
+
+    --radius: 0.75rem;
+
+    --trading-green: 160 55% 65%;
+    --trading-red: 0 65% 70%;
+    --trading-yellow: 45 85% 70%;
+    --table-header: 220 12% 14%;
+    --table-row: 220 10% 10%;
+    --table-hover: 220 15% 18%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background: linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 20% 6%) 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .trading-table {
+    @apply w-full border-collapse;
+  }
+  
+  .trading-table th {
+    @apply bg-[hsl(var(--table-header))] text-sm font-semibold text-muted-foreground px-6 py-4 text-left border-b border-border/30;
+  }
+  
+  .trading-table td {
+    @apply px-6 py-4 text-sm border-b border-border/20;
+  }
+  
+  .trading-table tr:hover {
+    @apply bg-[hsl(var(--table-hover))];
+  }
+  
+  .price-green {
+    @apply text-[hsl(var(--trading-green))] font-semibold;
+  }
+  
+  .price-red {
+    @apply text-[hsl(var(--trading-red))] font-semibold;
+  }
+  
+  .price-yellow {
+    @apply text-[hsl(var(--trading-yellow))] font-semibold;
+  }
+
+  .glass-card {
+    @apply bg-card/90 backdrop-blur-lg border border-border/30;
+    background: linear-gradient(135deg, hsl(var(--card))/0.9 0%, hsl(var(--card))/0.7 100%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
