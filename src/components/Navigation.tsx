@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, TrendingUp, Map, Wallet, User, FileUser } from 'lucide-react';
+import { Home, TrendingUp, Map, Wallet, User } from 'lucide-react';
 import { BLogo } from './BLogo';
 import { WalletButton } from './wallet/WalletButton';
 import { createRoute, isActiveRoute } from '@/utils/navigation';
@@ -123,12 +123,12 @@ export const Navigation = () => {
                 <div className="absolute right-0 top-12 w-48 bg-card/95 backdrop-blur-lg border border-border/30 rounded-lg shadow-lg z-50">
                   <div className="py-2">
                     <Link
-                      to={createRoute('/mypage')}
+                      to={createRoute('/wallet')}
                       className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-foreground hover:bg-primary/10 transition-colors"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
-                      <FileUser className="w-4 h-4" />
-                      <span>My Page</span>
+                      <Wallet className="w-4 h-4" />
+                      <span>My Wallet</span>
                     </Link>
                   </div>
                 </div>
