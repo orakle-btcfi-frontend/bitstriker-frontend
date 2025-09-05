@@ -59,7 +59,8 @@ const App = () => {
                 </>
               ) : (
                 <>
-                  {/* Production 환경: /btcfi 및 /btcfi-static 라우팅 모두 지원 */}
+                  {/* Production 환경: 루트 경로 사용 */}
+                  {/* 기존 /btcfi 경로들 주석처리
                   <Route path="/btcfi" element={<Homepage />} />
                   <Route path="/btcfi/trade" element={<TradePage />} />
                   <Route path="/btcfi/portfolio" element={<PortfolioPage />} />
@@ -67,8 +68,9 @@ const App = () => {
                   <Route path="/btcfi/mypage" element={<MyPage />} />
                   <Route path="/btcfi/settings" element={<SettingsPage />} />
                   <Route path="/btcfi/api-test" element={<ApiTestPage />} />
+                  */}
 
-                  {/* Default routes for root access */}
+                  {/* 루트 경로로 변경 */}
                   <Route path="/" element={<Homepage />} />
                   <Route path="/trade" element={<TradePage />} />
                   <Route path="/portfolio" element={<PortfolioPage />} />

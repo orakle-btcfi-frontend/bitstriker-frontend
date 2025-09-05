@@ -8,7 +8,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'development' ? '/' : '/btcfi-static',
+  base: '/', // mode === 'development' ? '/' : '/btcfi-static',
   define: {
     global: 'globalThis',
     'process.env': {},
@@ -97,9 +97,13 @@ export default defineConfig(({ mode }) => ({
     outDir: 'static',
     rollupOptions: {
       output: {
-        entryFileNames: `assets/[name].btcfi.js`, // JavaScript 파일의 이름 패턴
-        chunkFileNames: `assets/[name].btcfi.js`, // 비동기 청크 파일의 이름 패턴
-        assetFileNames: `assets/[name].btcfi.[ext]`, // CSS, 이미지 등의 파일 이름 패턴
+        entryFileNames: `assets/[name].[hash].js`, // JavaScript 파일의 이름 패턴
+        chunkFileNames: `assets/[name].[hash].js`, // 비동기 청크 파일의 이름 패턴
+        assetFileNames: `assets/[name].[hash].[ext]`, // CSS, 이미지 등의 파일 이름 패턴
+        // 기존 btcfi 파일명 패턴 주석처리
+        // entryFileNames: `assets/[name].btcfi.js`,
+        // chunkFileNames: `assets/[name].btcfi.js`,
+        // assetFileNames: `assets/[name].btcfi.[ext]`,
       },
     },
   },

@@ -1,6 +1,10 @@
 // Navigation utility functions for handling different base paths
 
 export const getBasePath = (): string => {
+  // 모든 환경에서 루트 경로 사용
+  return '';
+
+  /* 기존 btcfi 관련 로직 주석처리
   const pathname = window.location.pathname;
   const isDev = import.meta.env.DEV;
 
@@ -20,6 +24,7 @@ export const getBasePath = (): string => {
 
   // Production이지만 base path가 명확하지 않은 경우 기본값 사용
   return '/btcfi-static';
+  */
 };
 
 export const createRoute = (path: string): string => {
