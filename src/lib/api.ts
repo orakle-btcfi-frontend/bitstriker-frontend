@@ -1,5 +1,5 @@
 // API 클라이언트 설정
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api-btcfi';
+const API_BASE_URL = '/api-btcfi';
 
 // API 요청을 위한 기본 fetch 함수
 export async function apiRequest<T>(
