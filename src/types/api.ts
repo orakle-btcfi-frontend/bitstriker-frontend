@@ -91,11 +91,13 @@ export interface OptionData {
     mark: number;
     iv: number;
     delta: number;
+    max_quantity: number;
   };
   put: {
     mark: number;
     iv: number;
     delta: number;
+    max_quantity: number;
   };
   expiry: string;
   id: number;

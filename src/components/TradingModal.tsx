@@ -26,12 +26,22 @@ export const TradingModal = ({
   symbol,
   selectedExpiry,
 }: TradingModalProps) => {
-  const [quantity, setQuantity] = useState('0.1'); // BTC 단위로 시작
+  const [quantity, setQuantity] = useState('0.001'); // BTC 단위로 시작 (더 안전한 기본값)
   const { toast } = useToast();
   const { state } = useWallet(); // 지갑 상태 가져오기
 
   // 새로운 API의 계약 생성 훅 사용
   const createContract = useCreateContract();
+
+  // 모달이 열릴 때 적절한 기본 수량 설정
+  useEffect(() => {
+    if (isOpen && option) {
+      const maxQty = option?.max_quantity || 0.001;
+      // max_quantity의 10% 정도를 기본값으로 설정 (최소 0.0001, 최대 0.01)
+      const suggestedQty = Math.min(Math.max(maxQty * 0.1, 0.0001), 0.01);
+      setQuantity(suggestedQty.toFixed(6));
+    }
+  }, [isOpen, option]);
 
   // ESC 키로 모달 닫기
   useEffect(() => {
@@ -53,7 +63,9 @@ export const TradingModal = ({
   if (!isOpen || !option) return null;
 
   const isCall = option.type === 'calls';
-  const premiumBTC = option?.mark || 0; // 이미 BTC 단위
+  // 옵션 타입에 따라 올바른 premium 값 가져오기
+  // OptionsTable에서 { ...option.call, strike } 또는 { ...option.put, strike } 형태로 전달됨
+  const premiumBTC = option?.mark || 0;
   const quantityNum = parseFloat(quantity) || 0;
   const totalCostBTC = quantityNum * premiumBTC;
   const totalCostUSD = totalCostBTC * currentPrice;
@@ -71,8 +83,8 @@ export const TradingModal = ({
     // 2. 리스크 관리 기반 최대량 (예: 지갑의 50%까지만 허용)
     const riskBasedMax = (userBalance * 0.5) / premiumBTC;
 
-    // 3. API에서 제공하는 max_quantity (있다면)
-    const apiMaxQuantity = parseFloat(option?.max_quantity || '999999');
+    // 3. API에서 제공하는 max_quantity (옵션 타입에 따라 다름)
+    const apiMaxQuantity = option?.max_quantity || 999999;
 
     // 가장 제한적인 값 사용
     return Math.min(balanceBasedMax, riskBasedMax, apiMaxQuantity);
@@ -92,14 +104,25 @@ export const TradingModal = ({
 
   const handleTrade = async () => {
     try {
+      // Premium 값 검증
+      if (premiumBTC <= 0) {
+        toast({
+          title: 'Trade Failed',
+          description:
+            '옵션 프리미엄 값이 올바르지 않습니다. 다른 옵션을 선택해주세요.',
+          variant: 'destructive',
+        });
+        return;
+      }
       // 선택된 만료일을 Unix timestamp로 변환
       const calculateExpiryTimestamp = (expiry: string): number => {
         const days = parseInt(expiry.replace('d', ''));
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + days);
-        // 만료일의 특정 시간으로 설정 (예: 오후 4시)
-        expiryDate.setHours(16, 0, 0, 0);
-        return Math.floor(expiryDate.getTime() / 1000);
+        const now = new Date();
+
+        // 현재 시간 + 지정된 일수 (밀리초 단위)
+        const expiryTime = now.getTime() + days * 24 * 60 * 60 * 1000;
+
+        return Math.floor(expiryTime / 1000);
       };
 
       const expiresTimestamp = selectedExpiry
@@ -108,11 +131,25 @@ export const TradingModal = ({
 
       const contractData: NewContractRequest = {
         side: isCall ? 'Call' : 'Put',
-        strike_price: option.strike,
+        strike_price: option.strike, // OptionData의 strike 필드 사용
         quantity: quantityNum,
         expires: expiresTimestamp,
         premium: premiumBTC,
       };
+
+      // 디버깅을 위한 로그
+      console.log('Contract data being sent:', contractData);
+      console.log('Option data:', option);
+      console.log('isCall:', isCall);
+      console.log('premiumBTC:', premiumBTC);
+      console.log('option.mark:', option?.mark);
+      console.log('option.max_quantity:', option?.max_quantity);
+      console.log('option.strike:', option?.strike);
+      console.log('maxQuantity calculated:', maxQuantity);
+      console.log('quantityNum:', quantityNum);
+      console.log('Selected expiry:', selectedExpiry);
+      console.log('Calculated expires timestamp:', expiresTimestamp);
+      console.log('Current time:', Math.floor(Date.now() / 1000));
 
       await createContract.mutateAsync(contractData);
 
@@ -124,10 +161,46 @@ export const TradingModal = ({
 
       onClose();
     } catch (error: any) {
+      console.error('Contract creation error:', error);
+
+      let errorMessage = 'An error occurred while creating the contract.';
+
+      // API 에러 메시지 파싱
+      if (error.message) {
+        if (error.message.includes('expiration date must be in the future')) {
+          errorMessage = '만료일이 과거로 설정되었습니다. 다시 시도해주세요.';
+        } else if (error.message.includes('Validation error')) {
+          errorMessage = `입력값 오류: ${error.message.replace('Validation error: ', '')}`;
+        } else if (error.message.includes('exceeds maximum allowed quantity')) {
+          errorMessage =
+            '요청한 수량이 최대 허용 수량을 초과했습니다. 수량을 줄여주세요.';
+        } else if (error.message.includes('Available collateral')) {
+          errorMessage =
+            '담보가 부족합니다. 수량을 줄이거나 담보를 추가해주세요.';
+        } else if (error.message.includes('Json deserialize error')) {
+          // 서버의 JSON 파싱 에러 처리
+          if (error.message.includes('expected f64')) {
+            errorMessage =
+              '숫자 형식이 올바르지 않습니다. 입력값을 확인해주세요.';
+          } else if (error.message.includes('unknown variant')) {
+            errorMessage =
+              '옵션 타입이 올바르지 않습니다. Call 또는 Put만 가능합니다.';
+          } else {
+            errorMessage = '입력 데이터 형식이 올바르지 않습니다.';
+          }
+        } else if (error.message.includes('Invalid JSON response')) {
+          errorMessage =
+            '서버 응답 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        } else if (error.message.includes('unexpected end of json input')) {
+          errorMessage = '서버 통신 오류가 발생했습니다. 다시 시도해주세요.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
         title: 'Trade Failed',
-        description:
-          error.message || 'An error occurred while creating the contract.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -238,7 +311,7 @@ export const TradingModal = ({
                   }
                 }}
                 className="bg-background"
-                placeholder="0.1"
+                placeholder={`Max: ${(option?.max_quantity || 0).toFixed(6)} BTC`}
                 onBlur={e => {
                   // 포커스를 잃을 때 유효성 검사
                   const value = parseFloat(e.target.value);
@@ -257,6 +330,34 @@ export const TradingModal = ({
                   }
                 }}
               />
+
+              {/* Max 버튼 */}
+              <div className="flex justify-end mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const maxQty = Math.min(
+                      maxQuantity,
+                      option?.max_quantity || 0
+                    );
+                    // 90% 정도로 안전하게 설정
+                    const safeQty = maxQty * 0.9;
+                    if (safeQty > 0) {
+                      setQuantity(safeQty.toFixed(6));
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  Max (
+                  {(
+                    Math.min(maxQuantity, option?.max_quantity || 0) * 0.9
+                  ).toFixed(6)}{' '}
+                  BTC)
+                </Button>
+              </div>
+
               <div className="text-xs space-y-1 mt-3">
                 <div className="text-muted-foreground">
                   <span className="font-semibold text-primary">

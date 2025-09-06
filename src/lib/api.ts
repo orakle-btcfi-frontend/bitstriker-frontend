@@ -48,18 +48,58 @@ export async function newApiRequest<T>(
     ...options,
   };
 
+  // 디버깅을 위한 로그
+  console.log('API Request:', {
+    url,
+    method: config.method || 'GET',
+    headers: config.headers,
+    body: config.body,
+  });
+
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error ||
-        errorData.message ||
-        `API request failed: ${response.status} ${response.statusText}`
-    );
+    // Content-Type 확인해서 JSON 또는 텍스트로 처리
+    const contentType = response.headers.get('content-type');
+    let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+
+    try {
+      if (contentType?.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } else {
+        // 텍스트 응답 처리
+        const errorText = await response.text();
+        if (errorText.trim()) {
+          errorMessage = errorText;
+        }
+      }
+    } catch (parseError) {
+      console.error('Error parsing error response:', parseError);
+    }
+
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  // 응답이 비어있는 경우 처리 (content-length가 0이거나 204 No Content)
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0' || response.status === 204) {
+    return {} as T;
+  }
+
+  // 응답 텍스트를 먼저 확인
+  const responseText = await response.text();
+  if (!responseText.trim()) {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error('JSON parsing error:', error);
+    console.error('Response text:', responseText);
+    throw new Error('Invalid JSON response from server');
+  }
 }
 
 // API 엔드포인트 상수들

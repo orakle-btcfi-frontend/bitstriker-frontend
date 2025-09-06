@@ -134,12 +134,14 @@ export const transformNewOptionsToOptionData = (
           mark: parseFloat(option.premium),
           iv: option.iv,
           delta: option.delta,
+          max_quantity: parseFloat(option.max_quantity),
         };
       } else {
         acc[key].put = {
           mark: parseFloat(option.premium),
           iv: option.iv,
           delta: option.delta,
+          max_quantity: parseFloat(option.max_quantity),
         };
       }
 
