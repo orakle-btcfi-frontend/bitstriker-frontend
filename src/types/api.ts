@@ -106,3 +106,74 @@ export interface ApiError {
   error: string;
   details?: string;
 }
+
+// 새로운 BTC Options API 타입들
+export interface NewOptionsTableResponse {
+  side: 'Call' | 'Put';
+  strike_price: number;
+  expire: string; // "1d", "2d", "3d", "5d", "7d"
+  premium: string; // BTC 단위 (정밀도를 위한 문자열)
+  max_quantity: string; // BTC 단위 (정밀도를 위한 문자열)
+  iv: number;
+  delta: number;
+}
+
+export interface NewContractRequest {
+  side: 'Call' | 'Put';
+  strike_price: number;
+  quantity: number;
+  expires: number; // Unix timestamp
+  premium: number;
+}
+
+export interface NewContract {
+  side: 'Call' | 'Put';
+  strike_price: number;
+  quantity: string; // BTC 단위 (정밀도를 위한 문자열)
+  expires: number;
+  premium: string; // BTC 단위 (정밀도를 위한 문자열)
+}
+
+export interface TopBannerData {
+  volume_24hr: number; // BTC 단위
+  open_interest_usd: number; // USD 단위
+  contract_count: number;
+}
+
+export interface MarketHighlight {
+  product_symbol: string;
+  side: 'Call' | 'Put';
+  strike_price: number;
+  expire: string;
+  volume_24hr: number;
+  price_change_24hr_percent: number;
+}
+
+export interface TopGainer {
+  product_symbol: string;
+  side: 'Call' | 'Put';
+  strike_price: number;
+  expire: string;
+  change_24hr_percent: number;
+  last_price: number;
+}
+
+export interface TopVolumeItem {
+  product_symbol: string;
+  side: 'Call' | 'Put';
+  strike_price: number;
+  expire: string;
+  volume_usd: number;
+  last_price: number;
+}
+
+export interface HealthResponse {
+  status: string;
+  service: string;
+  version: string;
+}
+
+export interface NewApiError {
+  error: string;
+  message: string;
+}

@@ -52,6 +52,27 @@ export default defineConfig(({ mode }) => ({
           });
         },
       },
+      '/api-new': {
+        target: 'http://34.64.253.2:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: path => path.replace(/^\/api-new/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('new API proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to New API:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log(
+              'Received Response from New API:',
+              proxyRes.statusCode,
+              req.url
+            );
+          });
+        },
+      },
     },
   },
   plugins: [

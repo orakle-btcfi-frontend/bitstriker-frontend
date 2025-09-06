@@ -8,6 +8,10 @@
       "destination": "https://jungho.dev/api-btcfi/$1"
     },
     {
+      "source": "/api-new/(.*)",
+      "destination": "http://34.64.253.2:8080/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
