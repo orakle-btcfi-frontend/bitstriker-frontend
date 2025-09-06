@@ -4,13 +4,12 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WalletProvider } from '@/contexts/WalletContext';
-import Index from './pages/Index';
 import Homepage from './pages/Homepage';
-import Homepage2 from './pages/Homepage2';
+import HomepageOld from './pages/Homepage-old';
 import TradePage from './pages/TradePage';
-import TradePage2 from './pages/TradePage2';
+import TradePageOld from './pages/TradePage-old';
 import PortfolioPage from './pages/PortfolioPage';
-import PortfolioPage2 from './pages/PortfolioPage2';
+import PortfolioPageOld from './pages/PortfolioPage-old';
 import MyPage from './pages/MyPage';
 import SettingsPage from './pages/SettingsPage';
 import ApiTestPage from './pages/ApiTestPage';
@@ -52,11 +51,11 @@ const App = () => {
               {isDev ? (
                 <>
                   <Route path="/" element={<Homepage />} />
-                  <Route path="/home2" element={<Homepage2 />} />
+                  <Route path="/home-old" element={<HomepageOld />} />
                   <Route path="/trade" element={<TradePage />} />
-                  <Route path="/trade2" element={<TradePage2 />} />
+                  <Route path="/trade-old" element={<TradePageOld />} />
                   <Route path="/portfolio" element={<PortfolioPage />} />
-                  <Route path="/portfolio2" element={<PortfolioPage2 />} />
+                  <Route path="/portfolio-old" element={<PortfolioPageOld />} />
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/mypage" element={<MyPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
@@ -78,11 +77,11 @@ const App = () => {
 
                   {/* 루트 경로로 변경 */}
                   <Route path="/" element={<Homepage />} />
-                  <Route path="/home2" element={<Homepage2 />} />
+                  <Route path="/home-old" element={<HomepageOld />} />
                   <Route path="/trade" element={<TradePage />} />
-                  <Route path="/trade2" element={<TradePage2 />} />
+                  <Route path="/trade-old" element={<TradePageOld />} />
                   <Route path="/portfolio" element={<PortfolioPage />} />
-                  <Route path="/portfolio2" element={<PortfolioPage2 />} />
+                  <Route path="/portfolio-old" element={<PortfolioPageOld />} />
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/mypage" element={<MyPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

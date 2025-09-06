@@ -53,21 +53,21 @@ export const Navigation = () => {
                 <span>Home</span>
               </Link>
 
-              <Link
-                to={createRoute('/home2')}
+              {/* <Link
+                to={createRoute('/home-old')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActive('/home2')
+                  isActive('/home-old')
                     ? 'text-blue-600 font-semibold bg-blue-100'
-                    : hoveredItem === 'home2'
+                    : hoveredItem === 'home-old'
                       ? 'text-blue-500 bg-blue-50'
                       : 'text-muted-foreground hover:text-foreground'
                 }`}
-                onMouseEnter={() => setHoveredItem('home2')}
+                onMouseEnter={() => setHoveredItem('home-old')}
                 onMouseLeave={() => setHoveredItem(null)}
               >
                 <Home className="w-4 h-4" />
-                <span>Home</span>
-              </Link>
+                <span>Home (Old)</span>
+              </Link> */}
 
               <Link
                 to={createRoute('/trade')}
@@ -85,21 +85,21 @@ export const Navigation = () => {
                 <span>Trade</span>
               </Link>
 
-              <Link
-                to={createRoute('/trade2')}
+              {/* <Link
+                to={createRoute('/trade-old')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActive('/trade2')
+                  isActive('/trade-old')
                     ? 'text-blue-600 font-semibold bg-blue-100'
-                    : hoveredItem === 'trade2'
+                    : hoveredItem === 'trade-old'
                       ? 'text-blue-500 bg-blue-50'
                       : 'text-muted-foreground hover:text-foreground'
                 }`}
-                onMouseEnter={() => setHoveredItem('trade2')}
+                onMouseEnter={() => setHoveredItem('trade-old')}
                 onMouseLeave={() => setHoveredItem(null)}
               >
                 <TrendingUp className="w-4 h-4" />
-                <span>Trade</span>
-              </Link>
+                <span>Trade (Old)</span>
+              </Link> */}
 
               <Link
                 to={createRoute('/portfolio')}
@@ -117,21 +117,21 @@ export const Navigation = () => {
                 <span>Portfolio</span>
               </Link>
 
-              <Link
-                to={createRoute('/portfolio2')}
+              {/* <Link
+                to={createRoute('/portfolio-old')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isActive('/portfolio2')
+                  isActive('/portfolio-old')
                     ? 'text-blue-600 font-semibold bg-blue-100'
-                    : hoveredItem === 'portfolio2'
+                    : hoveredItem === 'portfolio-old'
                       ? 'text-blue-500 bg-blue-50'
                       : 'text-muted-foreground hover:text-foreground'
                 }`}
-                onMouseEnter={() => setHoveredItem('portfolio2')}
+                onMouseEnter={() => setHoveredItem('portfolio-old')}
                 onMouseLeave={() => setHoveredItem(null)}
               >
                 <Map className="w-4 h-4" />
-                <span>Portfolio</span>
-              </Link>
+                <span>Portfolio (Old)</span>
+              </Link> */}
 
               <Link
                 to={createRoute('/wallet')}

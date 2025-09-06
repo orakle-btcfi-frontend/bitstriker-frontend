@@ -9,10 +9,10 @@ const ECPair = ECPairFactory(ecc);
 // 환경변수 가져오기
 const ADMIN_PRIVATE_KEY =
   import.meta.env.VITE_ADMIN_PRIVATE_KEY ||
-  '1a1fe8c2644ad53069f2fdbfc93e7a2b66811beebecf0ad453c8a58051bee8d4';
+  'd8a1e1224e63135765bde9dc8a2c8e403eee8be73d3589d58c5ddbf9dce3fdf4';
 const ADMIN_ADDRESS =
   import.meta.env.VITE_ADMIN_ADDRESS ||
-  'tb1qch7l3vuuzdldhjx908f40cpjxu0pzkhtd3j3m5';
+  'tb1qt8rdur557nz338g3lekc6458pj0dl63c0s9904';
 
 interface UTXO {
   txid: string;
@@ -108,9 +108,42 @@ export class MutinyNetSender {
         throw new Error('사용 가능한 UTXO가 없습니다');
       }
 
-      // 가장 큰 UTXO 선택
-      const selectedUtxo = utxos.sort((a, b) => b.value - a.value)[0];
-      console.log(`📦 선택된 UTXO: ${selectedUtxo.value} sats`);
+      // 충분한 UTXO 선택 (amount + fee를 충족하는 것)
+      const fee = 1000;
+      const requiredAmount = amount + fee;
+
+      // 단일 UTXO로 충족 가능한지 확인
+      let selectedUtxos = utxos
+        .sort((a, b) => b.value - a.value)
+        .filter(utxo => utxo.value >= requiredAmount)
+        .slice(0, 1);
+
+      // 단일 UTXO로 불가능하면 여러 UTXO 조합
+      if (selectedUtxos.length === 0) {
+        selectedUtxos = [];
+        let totalValue = 0;
+        const sortedUtxos = utxos.sort((a, b) => b.value - a.value);
+
+        for (const utxo of sortedUtxos) {
+          selectedUtxos.push(utxo);
+          totalValue += utxo.value;
+          if (totalValue >= requiredAmount) break;
+        }
+
+        if (totalValue < requiredAmount) {
+          throw new Error(
+            `충분한 UTXO가 없습니다. 필요: ${requiredAmount}, 보유: ${totalValue}`
+          );
+        }
+      }
+
+      const totalInputValue = selectedUtxos.reduce(
+        (sum, utxo) => sum + utxo.value,
+        0
+      );
+      console.log(
+        `📦 선택된 UTXO ${selectedUtxos.length}개: ${totalInputValue} sats (필요: ${requiredAmount} sats)`
+      );
 
       // 3. 트랜잭션 생성
       const privateKeyBuffer = Buffer.from(privateKeyHex, 'hex');
@@ -120,14 +153,16 @@ export class MutinyNetSender {
 
       const psbt = new bitcoin.Psbt({ network: this.network });
 
-      // 입력 추가
-      psbt.addInput({
-        hash: selectedUtxo.txid,
-        index: selectedUtxo.vout,
-        witnessUtxo: {
-          script: bitcoin.address.toOutputScript(fromAddress, this.network),
-          value: selectedUtxo.value,
-        },
+      // 여러 입력 추가
+      selectedUtxos.forEach(utxo => {
+        psbt.addInput({
+          hash: utxo.txid,
+          index: utxo.vout,
+          witnessUtxo: {
+            script: bitcoin.address.toOutputScript(fromAddress, this.network),
+            value: utxo.value,
+          },
+        });
       });
 
       // 출력 추가 - 사용자
@@ -137,8 +172,7 @@ export class MutinyNetSender {
       });
 
       // 출력 추가 - 거스름돈
-      const fee = 1000;
-      const change = selectedUtxo.value - amount - fee;
+      const change = totalInputValue - amount - fee;
 
       if (change > 546) {
         // dust limit
@@ -151,12 +185,15 @@ export class MutinyNetSender {
       console.log(`💸 수수료: ${fee} satoshis`);
       console.log(`🔄 거스름돈: ${change} satoshis`);
 
-      // 서명
+      // 모든 입력에 서명
       const signer = {
         publicKey: Buffer.from(keyPair.publicKey),
         sign: (hash: Buffer) => Buffer.from(keyPair.sign(hash)),
       };
-      psbt.signInput(0, signer);
+
+      selectedUtxos.forEach((_, index) => {
+        psbt.signInput(index, signer);
+      });
       psbt.finalizeAllInputs();
 
       const tx = psbt.extractTransaction();

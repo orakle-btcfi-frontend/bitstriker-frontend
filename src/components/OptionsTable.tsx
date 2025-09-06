@@ -4,10 +4,12 @@ import { ShoppingCart, Loader2, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
-  useBTCOptions,
-  transformBTCOptionsToOptionData,
-} from '@/hooks/api/useBTCOptions';
-import { OptionData } from '@/types/api';
+  useNewOptionsTable,
+  transformNewOptionsToOptionData,
+  filterOptionsByExpiry,
+  filterOptionsByPrice,
+} from '@/hooks/api/useNewBTCOptions';
+import { NewOptionsTableResponse } from '@/types/api';
 import { ExpiryCountdown } from '@/components/ExpiryCountdown';
 
 interface OptionsTableProps {
@@ -19,10 +21,8 @@ interface OptionsTableProps {
     quantity: number;
   }) => void;
   onOptionClick?: (option: any) => void;
-  selectedExpiry?: string; // 선택된 만료일 (ISO 형식)
+  selectedExpiry?: string; // 선택된 만료일 ("1d", "2d", "3d", "5d", "7d")
 }
-
-// OptionData 타입은 이제 @/types/api에서 import
 
 export const OptionsTable = ({
   currentPrice,
@@ -34,52 +34,50 @@ export const OptionsTable = ({
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const { toast } = useToast();
 
-  // BTC 옵션 데이터를 API에서 가져오기 (현재가에 맞게 조정)
-  const {
-    data: btcOptionsData,
-    isLoading,
-    error,
-  } = useBTCOptions({ limit: 100 }); // 더 많은 옵션을 가져와서 필터링
+  // 새로운 BTC 옵션 데이터를 API에서 가져오기
+  const { data: newOptionsData, isLoading, error } = useNewOptionsTable();
 
-  // API 데이터를 프론트엔드 형식으로 변환하고 현재 가격에 맞게 조정
-  const allOptions = btcOptionsData
-    ? transformBTCOptionsToOptionData(btcOptionsData)
-        .map(option => {
-          // 백엔드 Strike 가격을 현재 BTC 가격 기준으로 스케일링
-          // 백엔드 데이터: 30,000 ~ 80,000 범위
-          // 현재 가격: ~115,000
-          const scaleFactor = currentPrice / 55000; // 55,000은 백엔드 데이터의 중간값
-          const adjustedStrike = Math.round(option.strike * scaleFactor);
+  // 새로운 API 데이터를 필터링하고 변환
+  const processedOptions = newOptionsData
+    ? (() => {
+        let filteredOptions = newOptionsData;
 
-          return {
-            ...option,
-            strike: adjustedStrike,
-          };
-        })
-        .filter(option => {
-          // 현재가 근처 ±15% 범위의 옵션들만 표시
-          const strikeRange = currentPrice * 0.15;
-          const withinStrikeRange =
-            Math.abs(option.strike - currentPrice) <= strikeRange;
+        // 선택된 만료일로 필터링
+        if (selectedExpiry) {
+          filteredOptions = filterOptionsByExpiry(
+            filteredOptions,
+            selectedExpiry
+          );
+        }
 
-          // 선택된 만료일이 있으면 해당 만료일로 필터링
-          if (selectedExpiry) {
-            return withinStrikeRange && option.expiry === selectedExpiry;
-          }
+        // 현재가 기준으로 필터링 (±15% 범위)
+        filteredOptions = filterOptionsByPrice(filteredOptions, currentPrice);
 
-          return withinStrikeRange;
-        })
-        .sort((a, b) => a.strike - b.strike) // Strike 가격순으로 정렬
+        // OptionData 형식으로 변환
+        return transformNewOptionsToOptionData(filteredOptions);
+      })()
     : [];
 
-  // 필터링된 옵션들 표시 (최대 15개)
-  const options = allOptions.slice(0, 15);
-
   // 디버깅용 로그
-  console.log('API Data:', btcOptionsData?.length || 0, 'options');
-  console.log('Transformed Options:', options.length, 'options');
-  if (options.length > 0) {
-    console.log('Sample option:', options[0]);
+  console.log('API Data:', newOptionsData?.length || 0, 'options');
+  console.log('Processed Options:', processedOptions.length, 'options');
+  if (processedOptions.length > 0) {
+    console.log('Sample processed option:', processedOptions[0]);
+    console.log(
+      'Put Delta values:',
+      processedOptions.map(opt => ({
+        strike: opt.strike,
+        putDelta: opt.put.delta,
+        callDelta: opt.call.delta,
+      }))
+    );
+
+    // 각 Put Delta 값 개별 출력
+    processedOptions.forEach((opt, index) => {
+      console.log(
+        `Option ${index + 1} - Strike: $${opt.strike}, Put Delta: ${opt.put.delta}, Call Delta: ${opt.call.delta}`
+      );
+    });
   }
 
   // 로딩 상태 처리
@@ -87,7 +85,7 @@ export const OptionsTable = ({
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="w-8 h-8 animate-spin" data-testid="loader-icon" />
-        <span className="ml-2">옵션 데이터를 불러오는 중...</span>
+        <span className="ml-2">Loading options data...</span>
       </div>
     );
   }
@@ -96,17 +94,20 @@ export const OptionsTable = ({
   if (error) {
     return (
       <div className="text-center p-8 text-red-500">
-        <p>옵션 데이터를 불러오는 중 오류가 발생했습니다.</p>
+        <p>An error occurred while loading options data.</p>
         <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
       </div>
     );
   }
 
   // 데이터가 없는 경우
-  if (options.length === 0) {
+  if (processedOptions.length === 0) {
     return (
       <div className="text-center p-8 text-muted-foreground">
-        <p>현재 사용 가능한 옵션이 없습니다.</p>
+        <p>No options currently available.</p>
+        {selectedExpiry && (
+          <p className="text-sm mt-2">Selected expiry: {selectedExpiry}</p>
+        )}
       </div>
     );
   }
@@ -129,6 +130,17 @@ export const OptionsTable = ({
     });
   };
 
+  const formatBTCAmount = (amount: number) => {
+    // 더 간결한 BTC 표시를 위해 소수점 자릿수 조정
+    if (amount >= 0.001) {
+      return amount.toFixed(6) + ' BTC';
+    } else if (amount >= 0.0001) {
+      return amount.toFixed(7) + ' BTC';
+    } else {
+      return amount.toFixed(8) + ' BTC';
+    }
+  };
+
   const getRowColor = (strike: number) => {
     return Math.abs(strike - currentPrice) < 1000 ? 'bg-primary/5' : 'bg-card';
   };
@@ -146,40 +158,42 @@ export const OptionsTable = ({
     return '';
   };
 
+  // 만료일을 ISO 형식으로 변환 (임시로 현재 시간 + 만료일 기간)
+  const convertExpiryToISO = (expire: string): string => {
+    const days = parseInt(expire.replace('d', ''));
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + days);
+    return expiryDate.toISOString();
+  };
+
   return (
-    <div className="overflow-x-auto rounded-xl">
-      <table className="trading-table w-full">
+    <div className="overflow-x-auto rounded-xl shadow-lg scrollbar-hide">
+      <table className="trading-table w-full min-w-[950px] table-fixed bg-card/50">
         <thead>
           <tr>
-            <th className="text-center text-[hsl(var(--trading-green))]">
+            <th className="text-center text-[hsl(var(--trading-green))] w-[13%]">
               Call Delta
             </th>
-            <th className="text-center text-[hsl(var(--trading-green))]">
+            <th className="text-center text-[hsl(var(--trading-green))] w-[11%]">
               Call IV
             </th>
-            <th className="text-center text-[hsl(var(--trading-green))]">
+            <th className="text-center text-[hsl(var(--trading-green))] w-[17%]">
               Call Premium
             </th>
-            <th className="text-center font-semibold">Strike Price</th>
-            <th className="text-center text-[hsl(var(--trading-red))]">
+            <th className="text-center font-semibold w-[17%]">Strike Price</th>
+            <th className="text-center text-[hsl(var(--trading-red))] w-[17%]">
               Put Premium
             </th>
-            <th className="text-center text-[hsl(var(--trading-red))]">
+            <th className="text-center text-[hsl(var(--trading-red))] w-[11%]">
               Put IV
             </th>
-            <th className="text-center text-[hsl(var(--trading-red))]">
+            <th className="text-center text-[hsl(var(--trading-red))] w-[13%]">
               Put Delta
-            </th>
-            <th className="text-center text-blue-600">
-              <div className="flex items-center justify-center gap-1">
-                <Clock className="w-4 h-4" />
-                만료시간
-              </div>
             </th>
           </tr>
         </thead>
         <tbody>
-          {options.map((option, index) => (
+          {processedOptions.map((option, index) => (
             <tr
               key={option.strike}
               className={`transition-all duration-200 ${getRowColor(
@@ -194,7 +208,7 @@ export const OptionsTable = ({
             >
               {/* Call Options - Delta, IV, Premium */}
               <td
-                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-green))]/20 transition-colors bg-[hsl(var(--trading-green))]/5 ${getCellBackgroundColor(
+                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-green))]/20 transition-colors bg-[hsl(var(--trading-green))]/5 px-3 py-3 ${getCellBackgroundColor(
                   option.strike,
                   'call'
                 )}`}
@@ -206,27 +220,12 @@ export const OptionsTable = ({
                   )
                 }
               >
-                {formatNumber(option.call.delta, 3)}
-              </td>
-              <td
-                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-green))]/20 transition-colors bg-[hsl(var(--trading-green))]/5 ${getCellBackgroundColor(
-                  option.strike,
-                  'call'
-                )}`}
-                onClick={() =>
-                  handleOptionClick(
-                    { ...option.call, strike: option.strike },
-                    'calls',
-                    index
-                  )
-                }
-              >
-                <span className="price-yellow">
-                  {formatNumber(option.call.iv, 1)}%
+                <span className="text-sm">
+                  {formatNumber(option.call.delta, 3)}
                 </span>
               </td>
               <td
-                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-green))]/20 transition-colors bg-[hsl(var(--trading-green))]/5 ${getCellBackgroundColor(
+                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-green))]/20 transition-colors bg-[hsl(var(--trading-green))]/5 px-3 py-3 ${getCellBackgroundColor(
                   option.strike,
                   'call'
                 )}`}
@@ -238,21 +237,38 @@ export const OptionsTable = ({
                   )
                 }
               >
-                <span className="price-yellow">
-                  ${formatNumber(option.call.mark)}
+                <span className="price-yellow text-sm">
+                  {formatNumber(option.call.iv * 100, 1)}%
+                </span>
+              </td>
+              <td
+                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-green))]/20 transition-colors bg-[hsl(var(--trading-green))]/5 px-3 py-3 ${getCellBackgroundColor(
+                  option.strike,
+                  'call'
+                )}`}
+                onClick={() =>
+                  handleOptionClick(
+                    { ...option.call, strike: option.strike },
+                    'calls',
+                    index
+                  )
+                }
+              >
+                <span className="price-yellow text-xs font-mono">
+                  {formatBTCAmount(option.call.mark)}
                 </span>
               </td>
 
               {/* Strike Price (Center) */}
-              <td className="font-semibold text-center bg-muted/10">
-                <div className="flex items-center justify-center space-x-2">
-                  <span className="text-base">
+              <td className="font-semibold text-center bg-muted/10 px-3 py-3">
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <span className="text-sm font-bold">
                     ${formatNumber(option.strike, 0)}
                   </span>
                   {Math.abs(option.strike - currentPrice) < 1000 && (
                     <Badge
                       variant="outline"
-                      className="text-xs px-2 py-0.5 bg-primary/10 border-primary/30 text-primary"
+                      className="text-xs px-1 py-0 bg-primary/10 border-primary/30 text-primary"
                     >
                       ATM
                     </Badge>
@@ -262,7 +278,7 @@ export const OptionsTable = ({
 
               {/* Put Options - Premium, IV, Delta */}
               <td
-                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-red))]/20 transition-colors bg-[hsl(var(--trading-red))]/5 ${getCellBackgroundColor(
+                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-red))]/20 transition-colors bg-[hsl(var(--trading-red))]/5 px-3 py-3 ${getCellBackgroundColor(
                   option.strike,
                   'put'
                 )}`}
@@ -274,12 +290,12 @@ export const OptionsTable = ({
                   )
                 }
               >
-                <span className="price-yellow">
-                  ${formatNumber(option.put.mark)}
+                <span className="price-yellow text-xs font-mono">
+                  {formatBTCAmount(option.put.mark)}
                 </span>
               </td>
               <td
-                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-red))]/20 transition-colors bg-[hsl(var(--trading-red))]/5 ${getCellBackgroundColor(
+                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-red))]/20 transition-colors bg-[hsl(var(--trading-red))]/5 px-3 py-3 ${getCellBackgroundColor(
                   option.strike,
                   'put'
                 )}`}
@@ -291,12 +307,12 @@ export const OptionsTable = ({
                   )
                 }
               >
-                <span className="price-yellow">
-                  {formatNumber(option.put.iv, 1)}%
+                <span className="price-yellow text-sm">
+                  {formatNumber(option.put.iv * 100, 1)}%
                 </span>
               </td>
               <td
-                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-red))]/20 transition-colors bg-[hsl(var(--trading-red))]/5 ${getCellBackgroundColor(
+                className={`text-center font-medium cursor-pointer hover:bg-[hsl(var(--trading-red))]/20 transition-colors bg-[hsl(var(--trading-red))]/5 px-3 py-3 ${getCellBackgroundColor(
                   option.strike,
                   'put'
                 )}`}
@@ -308,12 +324,11 @@ export const OptionsTable = ({
                   )
                 }
               >
-                {formatNumber(option.put.delta, 3)}
-              </td>
-
-              {/* Expiry Countdown */}
-              <td className="text-center bg-blue-50/30">
-                <ExpiryCountdown expiryDate={option.expiry} compact={true} />
+                <span className="text-sm font-semibold">
+                  {option.put.delta === 0
+                    ? '0.000'
+                    : formatNumber(option.put.delta, 3)}
+                </span>
               </td>
             </tr>
           ))}

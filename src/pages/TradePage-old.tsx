@@ -5,27 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Clock, X, Loader2 } from 'lucide-react';
 import { useBTCPriceChange } from '@/hooks/api/useBTCPrice';
-import { OptionsTable2 } from '@/components/OptionsTable2';
-import { TradingModal2 } from '@/components/TradingModal2';
+import { OptionsTable } from '@/components/OptionsTable';
+import { TradingModal } from '@/components/TradingModal';
 import { PriceChart } from '@/components/PriceChart';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { ExpiryCountdown } from '@/components/ExpiryCountdown';
-import { RealTimeCountdown } from '@/components/RealTimeCountdown';
-import {
-  useNewOptionsTable,
-  useTopBanner,
-  usePortfolioDelta,
-  useNewApiHealth,
-} from '@/hooks/api/useNewBTCOptions';
+import { useBTCOptions } from '@/hooks/api/useBTCOptions';
 
 interface ExpiryOption {
   label: string;
   days: number;
   expiryDate: string;
-  rawExpiry: string; // "1d", "2d", "3d", "5d", "7d" 형식
+  rawExpiry: string; // ISO 형식의 원본 만료일
 }
 
-const TradePage2 = () => {
+const TradePage = () => {
   // 실제 BTC 가격 데이터 가져오기
   const {
     data: priceData,
@@ -33,70 +27,68 @@ const TradePage2 = () => {
     error: priceError,
   } = useBTCPriceChange();
 
-  // 새로운 API 데이터들
-  const { data: healthData } = useNewApiHealth();
-  const { data: newOptionsData } = useNewOptionsTable();
-  const { data: topBannerData } = useTopBanner();
-  const { data: portfolioDelta } = usePortfolioDelta();
+  // 옵션 데이터 가져오기 (만료일 정보를 얻기 위해)
+  const { data: optionsData } = useBTCOptions({ limit: 50 });
 
   // 가격 데이터가 있으면 사용하고, 없으면 기본값 사용
   const currentPrice = priceData?.price || 121608.0;
   const priceChange = priceData?.change24h || 0.85;
 
-  // 새로운 API에서 고유한 만료일들을 추출하여 만료일 옵션 생성
+  // 백엔드 옵션 데이터에서 고유한 만료일들을 추출하여 만료일 옵션 생성
   const expiryOptions: ExpiryOption[] = useMemo(() => {
-    if (!newOptionsData || newOptionsData.length === 0) {
-      // 기본값 (새로운 API 데이터가 없을 때)
+    if (!optionsData || optionsData.length === 0) {
+      // 기본값 (백엔드 데이터가 없을 때)
       return [
         {
           label: 'Loading...',
           days: 1,
           expiryDate: 'Loading...',
-          rawExpiry: '1d',
+          rawExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         },
       ];
     }
 
     // 고유한 만료일들을 추출하고 정렬
     const uniqueExpiries = Array.from(
-      new Set(newOptionsData.map(option => option.expire))
-    ).sort((a, b) => {
-      const daysA = parseInt(a.replace('d', ''));
-      const daysB = parseInt(b.replace('d', ''));
-      return daysA - daysB;
-    });
+      new Set(optionsData.map(option => option.expiry))
+    ).sort();
 
-    return uniqueExpiries.map(expire => {
-      const days = parseInt(expire.replace('d', ''));
+    const now = new Date();
+
+    return uniqueExpiries.slice(0, 6).map(expiry => {
+      const expiryDate = new Date(expiry);
+      const diffDays = Math.ceil(
+        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       // 라벨 생성
       let label: string;
-      if (days === 1) {
+      if (diffDays <= 0) {
+        label = 'Expired';
+      } else if (diffDays === 1) {
         label = 'Tomorrow';
-      } else if (days <= 7) {
-        label = `${days}d`;
-      } else if (days <= 30) {
-        label = `${Math.ceil(days / 7)}w`;
+      } else if (diffDays <= 7) {
+        label = `${diffDays}d`;
+      } else if (diffDays <= 30) {
+        label = `${Math.ceil(diffDays / 7)}w`;
       } else {
-        label = `${Math.ceil(days / 30)}m`;
+        label = `${Math.ceil(diffDays / 30)}m`;
       }
 
-      // 포맷된 만료일
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + days);
-      const formattedExpiry = expiryDate.toLocaleDateString('en-US', {
+      // 포맷된 만료일 (한국시간 기준)
+      const formattedExpiry = expiryDate.toLocaleDateString('ko-KR', {
         month: 'short',
         day: 'numeric',
       });
 
       return {
         label,
-        days,
+        days: diffDays,
         expiryDate: formattedExpiry,
-        rawExpiry: expire,
+        rawExpiry: expiry,
       };
     });
-  }, [newOptionsData]);
+  }, [optionsData]);
 
   const [selectedExpiry, setSelectedExpiry] = useState<ExpiryOption | null>(
     null
@@ -136,7 +128,7 @@ const TradePage2 = () => {
                   <div className="flex flex-col items-center space-y-4">
                     <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--trading-yellow))]" />
                     <div className="text-lg text-muted-foreground">
-                      Loading price data...
+                      가격 정보 로딩 중...
                     </div>
                   </div>
                 ) : priceError ? (
@@ -145,7 +137,7 @@ const TradePage2 = () => {
                       ${currentPrice.toLocaleString()}
                     </div>
                     <div className="text-sm text-red-500 mb-2">
-                      Real-time price update unavailable
+                      실시간 가격 업데이트 불가
                     </div>
                   </div>
                 ) : (
@@ -216,27 +208,37 @@ const TradePage2 = () => {
                 </div>
                 <div className="mb-4">
                   {selectedExpiry ? (
-                    <div className="space-y-6">
-                      <RealTimeCountdown
-                        targetDate={(() => {
-                          // 현재 시간에서 정확한 만료일 계산
-                          const now = new Date();
-                          const expiry = new Date(now);
-                          expiry.setDate(now.getDate() + selectedExpiry.days);
-                          // 만료일의 특정 시간으로 설정 (예: 오후 4시)
-                          expiry.setHours(16, 0, 0, 0);
-                          return expiry;
-                        })()}
+                    <div className="text-center space-y-3">
+                      <ExpiryCountdown
+                        expiryDate={selectedExpiry.rawExpiry}
+                        compact={false}
+                        showBadge={false}
                       />
                       <div className="text-lg text-muted-foreground">
-                        Expiry: {selectedExpiry.expiryDate} (
-                        {selectedExpiry.rawExpiry})
+                        만료일:{' '}
+                        {new Date(selectedExpiry.rawExpiry).toLocaleDateString(
+                          'ko-KR',
+                          {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            weekday: 'short',
+                          }
+                        )}{' '}
+                        {new Date(selectedExpiry.rawExpiry).toLocaleTimeString(
+                          'ko-KR',
+                          {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                          }
+                        )}
                       </div>
                     </div>
                   ) : (
                     <div className="text-center">
                       <div className="text-muted-foreground">
-                        Loading expiry dates...
+                        만료일 로딩 중...
                       </div>
                     </div>
                   )}
@@ -251,12 +253,6 @@ const TradePage2 = () => {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-4">
                     <h2 className="text-xl font-semibold">Options Trading</h2>
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-100 text-blue-800 border-blue-300"
-                    >
-                      {newOptionsData?.length || 0} Options Available
-                    </Badge>
                   </div>
 
                   <div className="flex items-center space-x-6 text-sm text-muted-foreground">
@@ -264,7 +260,7 @@ const TradePage2 = () => {
                       BTC Price: ${currentPrice.toFixed(1)}
                     </Badge>
                     <Badge variant="outline" className="px-3 py-1">
-                      Premium in BTC
+                      ATM Vol: 34.3%
                     </Badge>
                   </div>
                 </div>
@@ -288,7 +284,7 @@ const TradePage2 = () => {
                       </h3>
                     </div>
                   </div>
-                  <OptionsTable2
+                  <OptionsTable
                     currentPrice={currentPrice}
                     onOptionClick={handleOptionClick}
                     selectedExpiry={selectedExpiry?.rawExpiry}
@@ -301,7 +297,7 @@ const TradePage2 = () => {
       </div>
 
       {/* Trading Modal */}
-      <TradingModal2
+      <TradingModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         option={selectedOption}
@@ -312,4 +308,4 @@ const TradePage2 = () => {
   );
 };
 
-export default TradePage2;
+export default TradePage;

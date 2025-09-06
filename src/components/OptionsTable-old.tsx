@@ -4,15 +4,13 @@ import { ShoppingCart, Loader2, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
-  useNewOptionsTable,
-  transformNewOptionsToOptionData,
-  filterOptionsByExpiry,
-  filterOptionsByPrice,
-} from '@/hooks/api/useNewBTCOptions';
-import { NewOptionsTableResponse } from '@/types/api';
+  useBTCOptions,
+  transformBTCOptionsToOptionData,
+} from '@/hooks/api/useBTCOptions';
+import { OptionData } from '@/types/api';
 import { ExpiryCountdown } from '@/components/ExpiryCountdown';
 
-interface OptionsTable2Props {
+interface OptionsTableProps {
   currentPrice: number;
   onTrade?: (trade: {
     type: 'calls' | 'puts';
@@ -21,48 +19,67 @@ interface OptionsTable2Props {
     quantity: number;
   }) => void;
   onOptionClick?: (option: any) => void;
-  selectedExpiry?: string; // 선택된 만료일 ("1d", "2d", "3d", "5d", "7d")
+  selectedExpiry?: string; // 선택된 만료일 (ISO 형식)
 }
 
-export const OptionsTable2 = ({
+// OptionData 타입은 이제 @/types/api에서 import
+
+export const OptionsTable = ({
   currentPrice,
   onTrade,
   onOptionClick,
   selectedExpiry,
-}: OptionsTable2Props) => {
+}: OptionsTableProps) => {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const { toast } = useToast();
 
-  // 새로운 BTC 옵션 데이터를 API에서 가져오기
-  const { data: newOptionsData, isLoading, error } = useNewOptionsTable();
+  // BTC 옵션 데이터를 API에서 가져오기 (현재가에 맞게 조정)
+  const {
+    data: btcOptionsData,
+    isLoading,
+    error,
+  } = useBTCOptions({ limit: 100 }); // 더 많은 옵션을 가져와서 필터링
 
-  // 새로운 API 데이터를 필터링하고 변환
-  const processedOptions = newOptionsData
-    ? (() => {
-        let filteredOptions = newOptionsData;
+  // API 데이터를 프론트엔드 형식으로 변환하고 현재 가격에 맞게 조정
+  const allOptions = btcOptionsData
+    ? transformBTCOptionsToOptionData(btcOptionsData)
+        .map(option => {
+          // 백엔드 Strike 가격을 현재 BTC 가격 기준으로 스케일링
+          // 백엔드 데이터: 30,000 ~ 80,000 범위
+          // 현재 가격: ~115,000
+          const scaleFactor = currentPrice / 55000; // 55,000은 백엔드 데이터의 중간값
+          const adjustedStrike = Math.round(option.strike * scaleFactor);
 
-        // 선택된 만료일로 필터링
-        if (selectedExpiry) {
-          filteredOptions = filterOptionsByExpiry(
-            filteredOptions,
-            selectedExpiry
-          );
-        }
+          return {
+            ...option,
+            strike: adjustedStrike,
+          };
+        })
+        .filter(option => {
+          // 현재가 근처 ±15% 범위의 옵션들만 표시
+          const strikeRange = currentPrice * 0.15;
+          const withinStrikeRange =
+            Math.abs(option.strike - currentPrice) <= strikeRange;
 
-        // 현재가 기준으로 필터링 (±15% 범위)
-        filteredOptions = filterOptionsByPrice(filteredOptions, currentPrice);
+          // 선택된 만료일이 있으면 해당 만료일로 필터링
+          if (selectedExpiry) {
+            return withinStrikeRange && option.expiry === selectedExpiry;
+          }
 
-        // OptionData 형식으로 변환
-        return transformNewOptionsToOptionData(filteredOptions);
-      })()
+          return withinStrikeRange;
+        })
+        .sort((a, b) => a.strike - b.strike) // Strike 가격순으로 정렬
     : [];
 
+  // 필터링된 옵션들 표시 (최대 15개)
+  const options = allOptions.slice(0, 15);
+
   // 디버깅용 로그
-  console.log('API Data:', newOptionsData?.length || 0, 'options');
-  console.log('Processed Options:', processedOptions.length, 'options');
-  if (processedOptions.length > 0) {
-    console.log('Sample processed option:', processedOptions[0]);
+  console.log('API Data:', btcOptionsData?.length || 0, 'options');
+  console.log('Transformed Options:', options.length, 'options');
+  if (options.length > 0) {
+    console.log('Sample option:', options[0]);
   }
 
   // 로딩 상태 처리
@@ -70,7 +87,7 @@ export const OptionsTable2 = ({
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="w-8 h-8 animate-spin" data-testid="loader-icon" />
-        <span className="ml-2">Loading options data...</span>
+        <span className="ml-2">옵션 데이터를 불러오는 중...</span>
       </div>
     );
   }
@@ -79,20 +96,17 @@ export const OptionsTable2 = ({
   if (error) {
     return (
       <div className="text-center p-8 text-red-500">
-        <p>An error occurred while loading options data.</p>
+        <p>옵션 데이터를 불러오는 중 오류가 발생했습니다.</p>
         <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
       </div>
     );
   }
 
   // 데이터가 없는 경우
-  if (processedOptions.length === 0) {
+  if (options.length === 0) {
     return (
       <div className="text-center p-8 text-muted-foreground">
-        <p>No options currently available.</p>
-        {selectedExpiry && (
-          <p className="text-sm mt-2">Selected expiry: {selectedExpiry}</p>
-        )}
+        <p>현재 사용 가능한 옵션이 없습니다.</p>
       </div>
     );
   }
@@ -115,10 +129,6 @@ export const OptionsTable2 = ({
     });
   };
 
-  const formatBTCAmount = (amount: number) => {
-    return amount.toFixed(8) + ' BTC';
-  };
-
   const getRowColor = (strike: number) => {
     return Math.abs(strike - currentPrice) < 1000 ? 'bg-primary/5' : 'bg-card';
   };
@@ -136,14 +146,6 @@ export const OptionsTable2 = ({
     return '';
   };
 
-  // 만료일을 ISO 형식으로 변환 (임시로 현재 시간 + 만료일 기간)
-  const convertExpiryToISO = (expire: string): string => {
-    const days = parseInt(expire.replace('d', ''));
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + days);
-    return expiryDate.toISOString();
-  };
-
   return (
     <div className="overflow-x-auto rounded-xl">
       <table className="trading-table w-full">
@@ -156,11 +158,11 @@ export const OptionsTable2 = ({
               Call IV
             </th>
             <th className="text-center text-[hsl(var(--trading-green))]">
-              Call Premium (BTC)
+              Call Premium
             </th>
             <th className="text-center font-semibold">Strike Price</th>
             <th className="text-center text-[hsl(var(--trading-red))]">
-              Put Premium (BTC)
+              Put Premium
             </th>
             <th className="text-center text-[hsl(var(--trading-red))]">
               Put IV
@@ -171,13 +173,13 @@ export const OptionsTable2 = ({
             <th className="text-center text-blue-600">
               <div className="flex items-center justify-center gap-1">
                 <Clock className="w-4 h-4" />
-                Expiry Time
+                만료시간
               </div>
             </th>
           </tr>
         </thead>
         <tbody>
-          {processedOptions.map((option, index) => (
+          {options.map((option, index) => (
             <tr
               key={option.strike}
               className={`transition-all duration-200 ${getRowColor(
@@ -220,7 +222,7 @@ export const OptionsTable2 = ({
                 }
               >
                 <span className="price-yellow">
-                  {formatNumber(option.call.iv * 100, 1)}%
+                  {formatNumber(option.call.iv, 1)}%
                 </span>
               </td>
               <td
@@ -236,8 +238,8 @@ export const OptionsTable2 = ({
                   )
                 }
               >
-                <span className="price-yellow text-xs">
-                  {formatBTCAmount(option.call.mark)}
+                <span className="price-yellow">
+                  ${formatNumber(option.call.mark)}
                 </span>
               </td>
 
@@ -272,8 +274,8 @@ export const OptionsTable2 = ({
                   )
                 }
               >
-                <span className="price-yellow text-xs">
-                  {formatBTCAmount(option.put.mark)}
+                <span className="price-yellow">
+                  ${formatNumber(option.put.mark)}
                 </span>
               </td>
               <td
@@ -290,7 +292,7 @@ export const OptionsTable2 = ({
                 }
               >
                 <span className="price-yellow">
-                  {formatNumber(option.put.iv * 100, 1)}%
+                  {formatNumber(option.put.iv, 1)}%
                 </span>
               </td>
               <td
@@ -310,10 +312,8 @@ export const OptionsTable2 = ({
               </td>
 
               {/* Expiry Countdown */}
-              <td className="text-center">
-                <div className="text-sm font-medium text-blue-700">
-                  {selectedExpiry || option.expiry}
-                </div>
+              <td className="text-center bg-blue-50/30">
+                <ExpiryCountdown expiryDate={option.expiry} compact={true} />
               </td>
             </tr>
           ))}

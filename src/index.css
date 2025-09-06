@@ -65,15 +65,15 @@ All colors MUST be HSL.
 
 @layer components {
   .trading-table {
-    @apply w-full border-collapse;
+    @apply w-full border-collapse border-spacing-0;
   }
 
   .trading-table th {
-    @apply bg-[hsl(var(--table-header))] text-sm font-semibold text-muted-foreground px-6 py-4 text-left border-b border-border/30;
+    @apply bg-[hsl(var(--table-header))] text-sm font-semibold text-muted-foreground px-4 py-3 text-center border-b border-border/30;
   }
 
   .trading-table td {
-    @apply px-6 py-4 text-sm border-b border-border/20;
+    @apply text-sm border-b border-border/20;
   }
 
   .trading-table tr:hover {
@@ -102,5 +102,14 @@ All colors MUST be HSL.
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
   }
 }

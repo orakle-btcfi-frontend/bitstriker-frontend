@@ -133,14 +133,14 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
     setIsGettingCoins(true);
     try {
       const sender = new MutinyNetSender();
-      const result = await sender.sendTestCoins(state.wallet.address, 1000); // 0.00001 BTC
+      const result = await sender.sendTestCoins(state.wallet.address, 1000000); // 0.01 BTC
 
       if (result.success) {
         toast({
           title: '테스트 코인 전송 완료!',
           description: (
             <div className="space-y-1">
-              <div>0.00001 BTC가 전송되었습니다.</div>
+              <div>0.01 BTC가 전송되었습니다.</div>
               <div>TXID: {result.txid?.slice(0, 8)}...</div>
               {result.explorerUrl && (
                 <a
@@ -269,7 +269,7 @@ export function WalletModal({ open, onOpenChange }: WalletModalProps) {
                   테스트 코인 받기
                 </Label>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  Admin 지갑에서 0.00001 BTC를 받을 수 있습니다.
+                  Admin 지갑에서 0.01 BTC를 받을 수 있습니다.
                 </p>
                 <Button
                   variant="outline"
