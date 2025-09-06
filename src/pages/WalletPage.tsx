@@ -232,6 +232,11 @@ const WalletPage = () => {
     return `$${fiatAmount.toFixed(2)}`;
   };
 
+  const formatBTC = (sats: number) => {
+    const btcAmount = sats / 100000000; // sats to BTC
+    return btcAmount.toFixed(8).replace(/\.?0+$/, '');
+  };
+
   const cycleBalanceView = () => {
     if (balanceView === 'sats') setBalanceView('fiat');
     else setBalanceView('sats');
@@ -256,13 +261,13 @@ const WalletPage = () => {
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <Wallet className="w-16 h-16 text-muted-foreground mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              지갑이 연결되지 않았습니다
+              Wallet Not Connected
             </h2>
             <p className="text-muted-foreground mb-6">
-              지갑을 연결하여 잔액과 거래 내역을 확인하세요.
+              Connect your wallet to view balance and transaction history.
             </p>
             <p className="text-sm text-muted-foreground">
-              헤더의 "지갑 연결" 버튼을 클릭하여 시작하세요.
+              Click the "Connect Wallet" button in the header to get started.
             </p>
           </div>
         </div>
@@ -308,14 +313,14 @@ const WalletPage = () => {
             </Link>
             <div className="w-px h-8 bg-border"></div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">내 지갑</h1>
+              <h1 className="text-3xl font-bold text-foreground">My Wallet</h1>
               <p className="text-muted-foreground">
                 {state.wallet?.address
                   ? `${state.wallet.address.slice(
                       0,
                       8
                     )}...${state.wallet.address.slice(-6)} • MutinyNet`
-                  : 'MutinyNet 지갑'}
+                  : 'MutinyNet Wallet'}
                 {btcPrice > 0 && ` • BTC Price: $${btcPrice.toLocaleString()}`}
               </p>
             </div>
@@ -352,7 +357,7 @@ const WalletPage = () => {
           </div>
         </div>
 
-        {/* 총 잔액 카드 */}
+        {/* Total Balance Card */}
         <Card className="glass-card mb-8">
           <CardContent className="p-6">
             <div className="text-center">
@@ -368,12 +373,20 @@ const WalletPage = () => {
                     <>
                       {formatSats(totalBalance)}{' '}
                       <span className="text-2xl text-primary">sats</span>
+                      <span className="text-lg text-muted-foreground ml-2">
+                        ({formatBTC(totalBalance)} BTC)
+                      </span>
                     </>
                   )}
                   {balanceView === 'fiat' && (
-                    <span className="text-[hsl(var(--trading-green))]">
-                      {formatFiat(totalBalance)}
-                    </span>
+                    <>
+                      <span className="text-[hsl(var(--trading-green))]">
+                        {formatFiat(totalBalance)}
+                      </span>
+                      <span className="text-lg text-muted-foreground ml-2">
+                        ({formatBTC(totalBalance)} BTC)
+                      </span>
+                    </>
                   )}
                 </div>
               </button>
@@ -413,7 +426,7 @@ const WalletPage = () => {
           </CardContent>
         </Card>
 
-        {/* 잔액 세부 정보 */}
+        {/* Balance Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <Card className="glass-card">
             <CardHeader className="pb-3">

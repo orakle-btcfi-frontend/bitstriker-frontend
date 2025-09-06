@@ -7,6 +7,7 @@ import { X, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { useCreateContract } from '@/hooks/api/useNewBTCOptions';
 import { useToast } from '@/hooks/use-toast';
 import { NewContractRequest } from '@/types/api';
+import { useWallet } from '@/contexts/WalletContext';
 
 interface TradingModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface TradingModalProps {
   option: any;
   currentPrice: number;
   symbol: string;
+  selectedExpiry?: string; // "1d", "2d", "3d", "5d", "7d" 형식
 }
 
 export const TradingModal = ({
@@ -22,9 +24,11 @@ export const TradingModal = ({
   option,
   currentPrice,
   symbol,
+  selectedExpiry,
 }: TradingModalProps) => {
   const [quantity, setQuantity] = useState('0.1'); // BTC 단위로 시작
   const { toast } = useToast();
+  const { state } = useWallet(); // 지갑 상태 가져오기
 
   // 새로운 API의 계약 생성 훅 사용
   const createContract = useCreateContract();
@@ -54,10 +58,53 @@ export const TradingModal = ({
   const totalCostBTC = quantityNum * premiumBTC;
   const totalCostUSD = totalCostBTC * currentPrice;
 
+  // 사용자 지갑 잔고 (BTC 단위)
+  const userBalance = state.wallet?.balance || 0;
+
+  // 옵션의 최대 거래 가능량 계산
+  const calculateMaxQuantity = () => {
+    if (premiumBTC <= 0) return 0;
+
+    // 1. 지갑 잔고 기반 최대량 (프리미엄으로 나눈 값)
+    const balanceBasedMax = userBalance / premiumBTC;
+
+    // 2. 리스크 관리 기반 최대량 (예: 지갑의 50%까지만 허용)
+    const riskBasedMax = (userBalance * 0.5) / premiumBTC;
+
+    // 3. API에서 제공하는 max_quantity (있다면)
+    const apiMaxQuantity = parseFloat(option?.max_quantity || '999999');
+
+    // 가장 제한적인 값 사용
+    return Math.min(balanceBasedMax, riskBasedMax, apiMaxQuantity);
+  };
+
+  const maxQuantity = calculateMaxQuantity();
+
+  // 실제 거래 가능한 최대량 (잔고와 max_quantity 중 작은 값)
+  const actualMaxQuantity = Math.min(userBalance / premiumBTC, maxQuantity);
+
+  // 잔고 부족 여부 체크 (유효한 값일 때만)
+  const isInsufficientBalance =
+    quantity !== '' && // 빈 문자열이 아니고
+    quantityNum > 0 && // 0보다 크고
+    premiumBTC > 0 && // 프리미엄이 유효하고
+    (quantityNum > maxQuantity || totalCostBTC > userBalance); // quantity가 max를 초과하거나 총 비용이 잔고 초과
+
   const handleTrade = async () => {
     try {
-      // 만료일을 Unix timestamp로 변환 (임시로 7일 후로 설정)
-      const expiresTimestamp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
+      // 선택된 만료일을 Unix timestamp로 변환
+      const calculateExpiryTimestamp = (expiry: string): number => {
+        const days = parseInt(expiry.replace('d', ''));
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + days);
+        // 만료일의 특정 시간으로 설정 (예: 오후 4시)
+        expiryDate.setHours(16, 0, 0, 0);
+        return Math.floor(expiryDate.getTime() / 1000);
+      };
+
+      const expiresTimestamp = selectedExpiry
+        ? calculateExpiryTimestamp(selectedExpiry)
+        : Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // 폴백: 7일 후
 
       const contractData: NewContractRequest = {
         side: isCall ? 'Call' : 'Put',
@@ -195,13 +242,42 @@ export const TradingModal = ({
                 onBlur={e => {
                   // 포커스를 잃을 때 유효성 검사
                   const value = parseFloat(e.target.value);
-                  if (isNaN(value) || value < 0.01) {
-                    setQuantity('0.01');
+                  if (isNaN(value) || value <= 0) {
+                    setQuantity(''); // 빈 값으로 두어서 사용자가 직접 입력하도록
+                  } else if (
+                    totalCostBTC > userBalance ||
+                    quantityNum > maxQuantity
+                  ) {
+                    // 총 비용이 잔고를 초과하거나 max_quantity를 초과하면 실제 최대 가능한 양으로 조정
+                    if (actualMaxQuantity > 0) {
+                      setQuantity(actualMaxQuantity.toFixed(8));
+                    } else {
+                      setQuantity('0');
+                    }
                   }
                 }}
               />
-              <div className="text-xs text-muted-foreground mt-1">
-                Minimum: 0.01 BTC
+              <div className="text-xs space-y-1 mt-3">
+                <div className="text-muted-foreground">
+                  <span className="font-semibold text-primary">
+                    Max Tradable: {maxQuantity.toFixed(8).replace(/\.?0+$/, '')}{' '}
+                    BTC
+                  </span>
+                  <span className="text-muted-foreground ml-2">
+                    (Risk Limit)
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  Balance: {userBalance.toFixed(8).replace(/\.?0+$/, '')} BTC
+                </div>
+                {isInsufficientBalance && (
+                  <div className="text-red-500 mt-2">
+                    ⚠️{' '}
+                    {quantityNum > maxQuantity
+                      ? 'Exceeds risk limit'
+                      : 'Insufficient balance'}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -247,13 +323,26 @@ export const TradingModal = ({
                 : 'bg-[hsl(var(--trading-red))] hover:bg-[hsl(var(--trading-red))]/90 text-white'
             }`}
             onClick={handleTrade}
-            disabled={createContract.isPending || quantityNum <= 0}
+            disabled={
+              createContract.isPending ||
+              quantityNum <= 0 ||
+              isInsufficientBalance ||
+              !state.isConnected
+            }
           >
             {createContract.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Creating Contract...
               </>
+            ) : !state.isConnected ? (
+              'Connect Wallet First'
+            ) : isInsufficientBalance ? (
+              quantityNum > maxQuantity ? (
+                'Exceeds Risk Limit'
+              ) : (
+                'Insufficient Balance'
+              )
             ) : (
               `Buy ${isCall ? 'Call' : 'Put'}`
             )}

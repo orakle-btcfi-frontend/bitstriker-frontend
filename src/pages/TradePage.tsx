@@ -339,6 +339,7 @@ const TradePage = () => {
         option={selectedOption}
         currentPrice={currentPrice}
         symbol="BTCUSD"
+        selectedExpiry={selectedExpiry?.rawExpiry}
       />
     </div>
   );
